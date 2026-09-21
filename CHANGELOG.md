@@ -2,6 +2,34 @@
 
 All notable changes to Lake Time-Series Forecasting are documented here.
 
+## [Unreleased]
+
+### GitHub Pages deployment
+
+- The application now runs entirely in the browser as a static site on GitHub
+  Pages. [stlite](https://github.com/whitphx/stlite) runs the unchanged
+  Streamlit app on Pyodide (Python compiled to WebAssembly); workbooks never
+  leave the user's device and no server is needed.
+- Every push to `main` tests, builds (`scripts/build_site.py`) and deploys the
+  site through `.github/workflows/deploy-pages.yml`.
+- When the `shap` package is unavailable (the browser runtime cannot install
+  it), SHAP values come from XGBoost's built-in TreeSHAP, which returns the
+  same values as `shap.TreeExplainer`.
+- The scenario pipeline is async so the live training console keeps updating
+  in the browser; results are unchanged (verified bit-for-bit against the
+  previous server version).
+
+### Fixes
+
+- Reproducible results on a Streamlit server: the hyperparameter search used
+  the global `random` generator, which WebSocket keep-alive pings also draw
+  from, so the same workbook could yield a different model on a later run.
+  It now uses a private `random.Random(42)` with the identical sequence.
+- The file uploader texts use the app font (Inter) in the browser build, as
+  they do on the server.
+- The Hetzner/CloudPanel deployment script and the Docker setup moved to
+  `legacy/server/`; the deployment script no longer contains credentials.
+
 ## [2.0.0] — 2026-08-01
 
 Version 2.0.0 is a major product release that introduces a complete visual

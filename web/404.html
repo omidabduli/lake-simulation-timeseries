@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page not found · Universal Time-Series Forecasting</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f9f8f3;
+        color: #191919;
+        font: 15px/1.55 system-ui, -apple-system, sans-serif;
+      }
+      main {
+        max-width: 640px;
+        margin: 15vh auto;
+        padding: 0 1.5rem;
+      }
+      h1 {
+        font: 600 22px/1.3 Georgia, serif;
+      }
+      a {
+        color: #1648d8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Page not found</h1>
+      <p>This address does not exist. The forecasting application is a single page.</p>
+      <p><a id="home" href="/">Open Universal Time-Series Forecasting</a></p>
+    </main>
+    <script>
+      // GitHub Pages serves this file for every missing path. On a project site
+      // (user.github.io/repository/) the app lives under the first path segment;
+      // on a custom domain it lives at the root.
+      const segment = window.location.pathname.split("/")[1];
+      if (window.location.hostname.endsWith(".github.io") && segment) {
+        document.getElementById("home").href = `/${segment}/`;
+      }
+    </script>
+  </body>
+</html>

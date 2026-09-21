@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import os
 import io
+import sys
 import html
 import time
+import asyncio
 import traceback
 import random
 import logging
@@ -45,6 +47,15 @@ from modules.model import train, predict
 from modules.visualizer import plot_comparison, plot_shap_bar
 from modules.logger import save_simulation_log
 from modules.docs_view import render_documentation
+
+# ---------------------------------------------------------------------------
+# Runtime: Streamlit server, or in the browser (stlite on Pyodide) for the
+# GitHub Pages build. In the browser the script shares one thread with the UI
+# message loop, so it must briefly yield before blocking model training for
+# queued updates (run header, live console) to be painted.
+# ---------------------------------------------------------------------------
+IS_BROWSER = sys.platform == "emscripten"
+_UI_REFRESH_SECONDS = 0.05 if IS_BROWSER else 0.0
 
 # ---------------------------------------------------------------------------
 # Page configuration
@@ -156,7 +167,9 @@ st.markdown(
     html, body, [data-testid="stAppViewContainer"], .main {
         overflow-x: hidden !important;
     }
-    html, body, [class*="css"] {
+    /* .stlite-root / overlay roots: in the browser build (stlite) the theme's
+       base font is set on these instead of <body>. */
+    html, body, .stlite-root, [data-st-overlay-root], [class*="css"] {
         font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
         color: var(--text-primary) !important;
     }
@@ -1595,7 +1608,7 @@ def _display_field_name(field_name: str) -> str:
 # ---------------------------------------------------------------------------
 # Helper: run full pipeline for one scenario (cached)
 # ---------------------------------------------------------------------------
-def _run_scenario(
+async def _run_scenario(
     historical_raw: pd.DataFrame,
     scenario_raw: pd.DataFrame,
     scenario_name: str,
@@ -1630,6 +1643,9 @@ def _run_scenario(
             When True (Advanced), render the live per-iteration hyperparameter
             racing chart + stats card. When False (Basic), run the same search
             silently behind a single spinner with no artificial delay.
+
+    The function is async only so the UI can repaint between optimization
+    candidates in the browser build; the calculations are unchanged.
 
     Returns:
         A dictionary containing the simulation results, or a string describing an error.
@@ -1686,7 +1702,8 @@ def _run_scenario(
     # 5. Model Optimization & Training
     
     training_placeholder = st.empty() if show_optimization_ui else _NoOp()
-    
+    await asyncio.sleep(_UI_REFRESH_SECONDS)
+
     best_cv_r2 = -float("inf")
     best_cv_rmse = float("inf")
     best_params = {}
@@ -1695,8 +1712,11 @@ def _run_scenario(
     n_iterations = search_iterations
     t0 = time.time()
     
-    # Fix random seed for reproducibility
-    random.seed(42)
+    # Fix random seed for reproducibility. A private generator yields the same
+    # sequence as random.seed(42), but other threads cannot shift it: on a
+    # Streamlit server, WebSocket keep-alive pings draw from the global
+    # `random` state, which made the candidate search differ between runs.
+    rng = random.Random(42)
     
     try:
         # TimeSeriesSplit ensures we never train on future data to predict the past
@@ -1704,9 +1724,9 @@ def _run_scenario(
         
         for i in range(n_iterations):
             # Generate random hyperparameters
-            lr = random.uniform(0.01, 0.2)
-            max_depth = random.randint(*depth_range)
-            n_estimators = random.randint(100, 500)
+            lr = rng.uniform(0.01, 0.2)
+            max_depth = rng.randint(*depth_range)
+            n_estimators = rng.randint(100, 500)
             
             params = {
                 "learning_rate": lr,
@@ -1790,8 +1810,7 @@ def _run_scenario(
                 progress_placeholder.progress(
                     (scenario_index + ((i + 1) / n_iterations)) / scenario_total
                 )
-            if show_optimization_ui:
-                time.sleep(0.15)
+            await asyncio.sleep(0.15 if show_optimization_ui else _UI_REFRESH_SECONDS)
         training_placeholder.empty()
 
         if not best_params:
@@ -1826,6 +1845,7 @@ def _run_scenario(
             """,
             unsafe_allow_html=True,
         )
+    await asyncio.sleep(_UI_REFRESH_SECONDS)
 
     # 6. Prediction: Predict the missing target variable in the scenario
     preds = predict(model, X_scen)
@@ -2835,241 +2855,253 @@ else:
 # ---------------------------------------------------------------------------
 # Automatically run ALL scenarios
 # ---------------------------------------------------------------------------
-results: dict[str, dict] = {}
-errors: dict[str, str] = {}
+async def _run_scenarios_and_render() -> None:
+    """Train and validate every scenario, then render one result tab each."""
+    results: dict[str, dict] = {}
+    errors: dict[str, str] = {}
 
-scenario_items = list(scenarios.items())
-scenario_total = len(scenario_items)
-run_header = st.empty()
-run_status = st.empty()
-run_header.markdown(
-    f"""
-    <div class="run-stage">
-        <div class="run-stage__kicker">Model execution</div>
-        <div class="run-stage__copy">
-            <h2>Running time-series scenarios</h2>
-            <p>{scenario_total} scenario{"s" if scenario_total != 1 else ""} queued for time-series training and validation.</p>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-progress_bar = st.progress(0)
-
-for idx, (scen_name, scen_df) in enumerate(scenario_items):
-    scenario_label = html.escape(scen_name.removeprefix("Scenario: "))
-    progress_bar.progress(idx / scenario_total)
-    run_status.markdown(
+    scenario_items = list(scenarios.items())
+    scenario_total = len(scenario_items)
+    run_header = st.empty()
+    run_status = st.empty()
+    run_header.markdown(
         f"""
-        <div class="run-status-row">
-            <span>{idx + 1:02d} / {scenario_total:02d}</span>
-            <strong>{scenario_label}</strong>
-            <em>Training &amp; validating model</em>
+        <div class="run-stage">
+            <div class="run-stage__kicker">Model execution</div>
+            <div class="run-stage__copy">
+                <h2>Running time-series scenarios</h2>
+                <p>{scenario_total} scenario{"s" if scenario_total != 1 else ""} queued for time-series training and validation.</p>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    result = _run_scenario(
-        historical_raw.copy(),
-        scen_df.copy(),
-        scen_name,
-        seasonal=seasonal_mode,
-        show_optimization_ui=app_mode == "Advanced",
-        status_placeholder=run_status,
-        progress_placeholder=progress_bar,
-        scenario_index=idx,
-        scenario_total=scenario_total,
-        search_iterations=model_search_iterations,
-        cv_folds=model_cv_folds,
-        depth_range=model_depth_range,
-        rolling_windows=model_rolling_windows,
-    )
-    if isinstance(result, str):
-        errors[scen_name] = result
-    else:
-        results[scen_name] = result
-        # Log successful simulation results for future AI analysis
-        save_simulation_log(scen_name, result)
-    progress_bar.progress((idx + 1) / scenario_total)
+    progress_bar = st.progress(0)
 
-run_header.empty()
-run_status.empty()
-progress_bar.empty()
-if basic_validation_notice is not None:
-    basic_validation_notice.empty()
-
-# Show errors if any
-for scen_name, err_msg in errors.items():
-    st.error(f"**{scen_name}** — {err_msg}")
-
-if not results:
-    st.error("All scenarios failed. Please check your Excel file.")
-    st.stop()
-
-# ---------------------------------------------------------------------------
-# Render results — one tab per scenario (auto-generated)
-# ---------------------------------------------------------------------------
-st.markdown(
-    f"""
-    <div class="result-overview">
-        <div>
-            <div class="hero-kicker">Simulation complete</div>
-            <h1>Scenario results</h1>
-        </div>
-        <p>{len(results)} scenario(s) processed with time-series cross-validation and explainable feature attribution.</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-tab_names = list(results.keys())
-tabs = st.tabs(
-    [_display_field_name(name.removeprefix("Scenario: ")) for name in tab_names]
-)
-
-for tab, scen_name in zip(tabs, tab_names):
-    res = results[scen_name]
-    scenario_display = _display_field_name(scen_name.removeprefix("Scenario: "))
-    target_display = _display_field_name(res["target_col"])
-    scenario_display_html = html.escape(scenario_display)
-    target_display_html = html.escape(target_display)
-
-    with tab:
-        # ── Header ─────────────────────────────────────────────────
-        col_title, col_download = st.columns([4, 1])
-        with col_title:
-            st.markdown(
-                f"""
-                <div style="margin-bottom:0.3rem;">
-                    <span class="status-dot live"></span>
-                    <span class="label-caps" style="color:var(--primary);">Prediction Complete</span>
-                </div>
-                <h2 style="margin:0;">
-                    {scenario_display_html}
-                </h2>
-                """,
-                unsafe_allow_html=True,
-            )
-        with col_download:
-            # Use German formatting: semicolon separator and comma for decimals
-            csv_bytes = res["scen_filled"].to_csv(sep=';', decimal=',').encode("utf-8")
-            safe_name = scen_name.replace("Scenario: ", "").replace(" ", "_")
-            st.download_button(
-                label="Download CSV",
-                data=csv_bytes,
-                file_name=f"{safe_name}_predicted.csv",
-                mime="text/csv",
-                key=f"dl_{scen_name}",
-            )
-
-        # ── Metrics strip ──────────────────────────────────────────
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Accuracy (R²)", f"{res['r2']:.4f}", help="R-squared score. Measures how well the model predicts the target. 1.0 is perfect, 0.0 means it's just guessing the average.")
-        m2.metric("Avg Error (RMSE)", f"{res['rmse']:.5f}", help="Root Mean Squared Error. The average absolute difference between the predicted and actual values. Lower is better.")
-        m3.metric("Target Variable", target_display, help=f"Source column: {res['target_col']}")
-        m4.metric("Factors", str(res["n_features"]), help="The total number of historical data columns (including engineered features like lags) the model used to make its prediction.")
-
-        st.markdown("<div style='height:0.8rem'></div>", unsafe_allow_html=True)
-
-        # ── Main chart: time-series comparison ─────────────────────
-        st.markdown(
-            f'''
-            <div class="eco-card">
-                <h3 title="This chart compares the historical data (light blue) against the AI's projections for the target variable in the scenario (orange dashed line).">
-                    Target Variable Prediction 
-                    <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; color:var(--outline); cursor:help;">info</span>
-                </h3>
-            ''',
+    for idx, (scen_name, scen_df) in enumerate(scenario_items):
+        scenario_label = html.escape(scen_name.removeprefix("Scenario: "))
+        progress_bar.progress(idx / scenario_total)
+        run_status.markdown(
+            f"""
+            <div class="run-status-row">
+                <span>{idx + 1:02d} / {scenario_total:02d}</span>
+                <strong>{scenario_label}</strong>
+                <em>Training &amp; validating model</em>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        fig_ts = plot_comparison(res["hist_df"], res["scen_filled"], res["target_col"])
-        st.plotly_chart(fig_ts, width="stretch", config={"displayModeBar": True})
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
-
-        # ── Bottom section: SHAP + Data Summary side by side ───────
-        if app_mode == "Advanced":
-            col_shap, col_summary = st.columns([2, 1], gap="medium")
+        result = await _run_scenario(
+            historical_raw.copy(),
+            scen_df.copy(),
+            scen_name,
+            seasonal=seasonal_mode,
+            show_optimization_ui=app_mode == "Advanced",
+            status_placeholder=run_status,
+            progress_placeholder=progress_bar,
+            scenario_index=idx,
+            scenario_total=scenario_total,
+            search_iterations=model_search_iterations,
+            cv_folds=model_cv_folds,
+            depth_range=model_depth_range,
+            rolling_windows=model_rolling_windows,
+        )
+        if isinstance(result, str):
+            errors[scen_name] = result
         else:
-            # Basic: SHAP graph full-width; expert scorecard & metadata are hidden.
-            col_shap = st.container()
+            results[scen_name] = result
+            # Log successful simulation results for future AI analysis
+            save_simulation_log(scen_name, result)
+        progress_bar.progress((idx + 1) / scenario_total)
 
-        with col_shap:
+    run_header.empty()
+    run_status.empty()
+    progress_bar.empty()
+    if basic_validation_notice is not None:
+        basic_validation_notice.empty()
+
+    # Show errors if any
+    for scen_name, err_msg in errors.items():
+        st.error(f"**{scen_name}** — {err_msg}")
+
+    if not results:
+        st.error("All scenarios failed. Please check your Excel file.")
+        st.stop()
+
+    # -----------------------------------------------------------------------
+    # Render results — one tab per scenario (auto-generated)
+    # -----------------------------------------------------------------------
+    st.markdown(
+        f"""
+        <div class="result-overview">
+            <div>
+                <div class="hero-kicker">Simulation complete</div>
+                <h1>Scenario results</h1>
+            </div>
+            <p>{len(results)} scenario(s) processed with time-series cross-validation and explainable feature attribution.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    tab_names = list(results.keys())
+    tabs = st.tabs(
+        [_display_field_name(name.removeprefix("Scenario: ")) for name in tab_names]
+    )
+
+    for tab, scen_name in zip(tabs, tab_names):
+        res = results[scen_name]
+        scenario_display = _display_field_name(scen_name.removeprefix("Scenario: "))
+        target_display = _display_field_name(res["target_col"])
+        scenario_display_html = html.escape(scenario_display)
+        target_display_html = html.escape(target_display)
+
+        with tab:
+            # ── Header ─────────────────────────────────────────────────
+            col_title, col_download = st.columns([4, 1])
+            with col_title:
+                st.markdown(
+                    f"""
+                    <div style="margin-bottom:0.3rem;">
+                        <span class="status-dot live"></span>
+                        <span class="label-caps" style="color:var(--primary);">Prediction Complete</span>
+                    </div>
+                    <h2 style="margin:0;">
+                        {scenario_display_html}
+                    </h2>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with col_download:
+                # Use German formatting: semicolon separator and comma for decimals
+                csv_bytes = res["scen_filled"].to_csv(sep=';', decimal=',').encode("utf-8")
+                safe_name = scen_name.replace("Scenario: ", "").replace(" ", "_")
+                st.download_button(
+                    label="Download CSV",
+                    data=csv_bytes,
+                    file_name=f"{safe_name}_predicted.csv",
+                    mime="text/csv",
+                    key=f"dl_{scen_name}",
+                )
+
+            # ── Metrics strip ──────────────────────────────────────────
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Accuracy (R²)", f"{res['r2']:.4f}", help="R-squared score. Measures how well the model predicts the target. 1.0 is perfect, 0.0 means it's just guessing the average.")
+            m2.metric("Avg Error (RMSE)", f"{res['rmse']:.5f}", help="Root Mean Squared Error. The average absolute difference between the predicted and actual values. Lower is better.")
+            m3.metric("Target Variable", target_display, help=f"Source column: {res['target_col']}")
+            m4.metric("Factors", str(res["n_features"]), help="The total number of historical data columns (including engineered features like lags) the model used to make its prediction.")
+
+            st.markdown("<div style='height:0.8rem'></div>", unsafe_allow_html=True)
+
+            # ── Main chart: time-series comparison ─────────────────────
             st.markdown(
                 f'''
                 <div class="eco-card">
-                    <h3 title="SHAP (SHapley Additive exPlanations) values show which historical factors most heavily influenced the AI's predictions.">
-                        AI Decision Factors (SHAP)
+                    <h3 title="This chart compares the historical data (light blue) against the AI's projections for the target variable in the scenario (orange dashed line).">
+                        Target Variable Prediction 
                         <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; color:var(--outline); cursor:help;">info</span>
                     </h3>
-                    <p class="body-sm" style="color:var(--on-surface-variant); margin-bottom:1rem;">Which factors moved the needle? Longer bars mean a larger impact.</p>
                 ''',
                 unsafe_allow_html=True,
             )
-            if res["mean_shap"] is not None:
-                fig_shap = plot_shap_bar(res["mean_shap"], res["feat_names"])
-                st.plotly_chart(fig_shap, width="stretch", config={"displayModeBar": False})
-            else:
-                st.info("AI Logic Breakdown is not available for this scenario.")
+            fig_ts = plot_comparison(res["hist_df"], res["scen_filled"], res["target_col"])
+            st.plotly_chart(fig_ts, width="stretch", config={"displayModeBar": True})
             st.markdown("</div>", unsafe_allow_html=True)
 
-        if app_mode == "Advanced":
-            with col_summary:
+            st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+
+            # ── Bottom section: SHAP + Data Summary side by side ───────
+            if app_mode == "Advanced":
+                col_shap, col_summary = st.columns([2, 1], gap="medium")
+            else:
+                # Basic: SHAP graph full-width; expert scorecard & metadata are hidden.
+                col_shap = st.container()
+
+            with col_shap:
+                st.markdown(
+                    f'''
+                    <div class="eco-card">
+                        <h3 title="SHAP (SHapley Additive exPlanations) values show which historical factors most heavily influenced the AI's predictions.">
+                            AI Decision Factors (SHAP)
+                            <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; color:var(--outline); cursor:help;">info</span>
+                        </h3>
+                        <p class="body-sm" style="color:var(--on-surface-variant); margin-bottom:1rem;">Which factors moved the needle? Longer bars mean a larger impact.</p>
+                    ''',
+                    unsafe_allow_html=True,
+                )
+                if res["mean_shap"] is not None:
+                    fig_shap = plot_shap_bar(res["mean_shap"], res["feat_names"])
+                    st.plotly_chart(fig_shap, width="stretch", config={"displayModeBar": False})
+                else:
+                    st.info("AI Logic Breakdown is not available for this scenario.")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            if app_mode == "Advanced":
+                with col_summary:
+                    st.markdown(
+                        f"""
+                        <div class="score-stack">
+                            <div class="score-stack__header">Model scorecard</div>
+                            <div class="score-stack__item" title="Root Mean Squared Error. Lower is better.">
+                                <span>Average error / RMSE</span>
+                                <strong>{res['rmse']:.5f}</strong>
+                            </div>
+                            <div class="score-stack__item" title="R-squared score. 1.0 is a perfect fit.">
+                                <span>Validation R²</span>
+                                <strong>{res['r2']:.4f}</strong>
+                            </div>
+                            <div class="score-stack__item score-stack__item--target" title="{html.escape(res['target_col'])}">
+                                <span>Predicted variable</span>
+                                <strong>{target_display_html}</strong>
+                            </div>
+                            <div class="score-stack__item">
+                                <span>Training time</span>
+                                <strong>{res['train_time']:.1f}s</strong>
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+            if app_mode == "Advanced":
+                # ── Footer: model metadata ─────────────────────────────────
                 st.markdown(
                     f"""
-                    <div class="score-stack">
-                        <div class="score-stack__header">Model scorecard</div>
-                        <div class="score-stack__item" title="Root Mean Squared Error. Lower is better.">
-                            <span>Average error / RMSE</span>
-                            <strong>{res['rmse']:.5f}</strong>
+                    <div class="model-facts">
+                        <div class="model-fact" title="The machine-learning algorithm used for this forecast.">
+                            <span>Model</span>
+                            <strong>XGBoost regressor</strong>
                         </div>
-                        <div class="score-stack__item" title="R-squared score. 1.0 is a perfect fit.">
-                            <span>Validation R²</span>
-                            <strong>{res['r2']:.4f}</strong>
+                        <div class="model-fact" title="Training and validation completed without errors.">
+                            <span>Training status</span>
+                            <strong class="model-status">Converged</strong>
                         </div>
-                        <div class="score-stack__item score-stack__item--target" title="{html.escape(res['target_col'])}">
-                            <span>Predicted variable</span>
-                            <strong>{target_display_html}</strong>
+                        <div class="model-fact" title="Total model optimization and training time.">
+                            <span>Calculation time</span>
+                            <strong>{res['train_time']:.1f} seconds</strong>
                         </div>
-                        <div class="score-stack__item">
-                            <span>Training time</span>
-                            <strong>{res['train_time']:.1f}s</strong>
+                        <div class="model-fact" title="Historical records used to train the model.">
+                            <span>Training volume</span>
+                            <strong>{len(res['hist_df']):,} rows</strong>
+                        </div>
+                        <div class="model-fact" title="Forward-only splits used to estimate performance on unseen future periods.">
+                            <span>Validation design</span>
+                            <strong>{res['cv_folds']} forward folds</strong>
+                        </div>
+                        <div class="model-fact" title="Number of candidate XGBoost configurations evaluated.">
+                            <span>Search effort</span>
+                            <strong>{res['search_iterations']} candidates</strong>
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-        if app_mode == "Advanced":
-            # ── Footer: model metadata ─────────────────────────────────
-            st.markdown(
-                f"""
-                <div class="model-facts">
-                    <div class="model-fact" title="The machine-learning algorithm used for this forecast.">
-                        <span>Model</span>
-                        <strong>XGBoost regressor</strong>
-                    </div>
-                    <div class="model-fact" title="Training and validation completed without errors.">
-                        <span>Training status</span>
-                        <strong class="model-status">Converged</strong>
-                    </div>
-                    <div class="model-fact" title="Total model optimization and training time.">
-                        <span>Calculation time</span>
-                        <strong>{res['train_time']:.1f} seconds</strong>
-                    </div>
-                    <div class="model-fact" title="Historical records used to train the model.">
-                        <span>Training volume</span>
-                        <strong>{len(res['hist_df']):,} rows</strong>
-                    </div>
-                    <div class="model-fact" title="Forward-only splits used to estimate performance on unseen future periods.">
-                        <span>Validation design</span>
-                        <strong>{res['cv_folds']} forward folds</strong>
-                    </div>
-                    <div class="model-fact" title="Number of candidate XGBoost configurations evaluated.">
-                        <span>Search effort</span>
-                        <strong>{res['search_iterations']} candidates</strong>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+
+# ---------------------------------------------------------------------------
+# A Streamlit server runs the coroutine to completion here. In the browser,
+# Pyodide's event loop is already running and cannot be blocked, so the
+# stlite entrypoint (web/entrypoint.py) awaits `scenario_run` instead.
+# ---------------------------------------------------------------------------
+scenario_run = _run_scenarios_and_render()
+if not IS_BROWSER:
+    asyncio.run(scenario_run)

@@ -456,6 +456,8 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             ```text
             lake-simulation-timeseries/
             ├── app.py                      # Streamlit UI & Orchestration Layer
+            ├── web/                        # GitHub Pages host page & browser entrypoint (stlite)
+            ├── scripts/build_site.py       # Assembles the static site for GitHub Pages
             ├── modules/
             │   ├── data_loader.py          # Excel Parsing, Sheet Separation, IQR Audit
             │   ├── feature_engineering.py   # Sine/Cosine Seasonality & Rolling Lags
@@ -471,7 +473,7 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             * `modules/data_loader.py`: Handles file ingestion (`load_excel`), parses sheets (`separate_sheets`), converts missing value placeholders (`clean_specific_columns`), detects target columns (`detect_target_column`), and flags outliers using IQR (`detect_data_issues`).
             * `modules/feature_engineering.py`: Normalizes time indices, extracts cyclical sine/cosine features for month/hour/day-of-year, and calculates continuous rolling lags.
             * `modules/model.py`: Wraps XGBoost regressor fitting with automated hyperparameter grid search over `TimeSeriesSplit` cross-validation splits.
-            * `modules/explainer.py`: Interfaces with `shap.TreeExplainer` to compute exact Shapley value matrices for historical and scenario predictions.
+            * `modules/explainer.py`: Interfaces with `shap.TreeExplainer` to compute exact Shapley value matrices for historical and scenario predictions (in the browser build, XGBoost's built-in TreeSHAP produces the identical values).
             * `modules/visualizer.py`: Generates dark-themed Plotly time-series plots comparing actuals, historical fits, and scenario projections alongside SHAP bar charts.
             * `modules/logger.py`: Writes structured run logs to `logs/simulation_YYYYMMDD_HHMMSS.json` for auditable model tracking.
             """,
@@ -484,10 +486,21 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_docker:
         st.markdown(
             r"""
-            ### Docker Containerization & Deployment Guide
+            ### Deployment Guide
 
-            #### Option A: Docker Compose (Recommended)
-            The easiest way to run the application in production without configuring local Python environments:
+            #### Option A: GitHub Pages (Production)
+            The public application is a static site: the same Python engine runs directly in the visitor's browser through [stlite](https://github.com/whitphx/stlite) (Streamlit on Pyodide/WebAssembly). No server is involved, and uploaded workbooks never leave the device.
+
+            Every push to the `main` branch runs `.github/workflows/deploy-pages.yml`, which tests the code, builds the site with `scripts/build_site.py`, and publishes it to GitHub Pages. To preview the production build locally:
+
+            ```bash
+            python3 scripts/build_site.py --serve
+            # Open http://127.0.0.1:8000/
+            ```
+
+            ---
+            #### Option B: Docker Compose (Self-Hosting)
+            Runs the application as a Streamlit server in a container. The files live in `legacy/server/`:
 
             ```bash
             # 1. Clone the repository
@@ -495,18 +508,14 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             cd lake-simulation-timeseries
 
             # 2. Build and launch container in background
-            docker compose up --build -d
+            docker compose -f legacy/server/docker-compose.yml up --build -d
 
             # 3. Access in browser at http://localhost:8501
             ```
 
-            ---
-            #### Option B: Standard Docker Commands
+            Or with standard Docker commands:
             ```bash
-            # Build Docker image
-            docker build -t lake-forecasting .
-
-            # Run container with volume mount for logs
+            docker build -f legacy/server/Dockerfile -t lake-forecasting .
             docker run -d -p 8501:8501 -v "$(pwd)/logs:/app/logs" --name lake-app lake-forecasting
             ```
 

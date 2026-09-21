@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Universal Time-Series Forecasting</title>
+    <meta
+      name="description"
+      content="Explainable time-series forecasting and scenario analysis with XGBoost and SHAP. Runs entirely in your browser."
+    />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500&display=swap"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #f9f8f3;
+        color: #191919;
+      }
+
+      /* Start-up screen shown while Python boots in the browser. Streamlit's own
+         loading skeleton follows the system colour scheme until the app theme
+         arrives, so it stays covered until the first app content is rendered. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background:
+          linear-gradient(rgba(230, 226, 216, 0.4) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(230, 226, 216, 0.4) 1px, transparent 1px),
+          #f9f8f3;
+        background-size: 28px 28px;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        transition: opacity 240ms ease;
+      }
+      #boot.is-done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .boot-card {
+        width: 100%;
+        max-width: 520px;
+        box-sizing: border-box;
+        padding: 32px;
+        border: 1px solid #191919;
+        background: #f9f8f3;
+      }
+      .boot-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 26px;
+      }
+      .boot-mark {
+        position: relative;
+        width: 18px;
+        height: 18px;
+        flex: 0 0 18px;
+        border: 2px solid #191919;
+        border-radius: 50%;
+      }
+      .boot-mark::after {
+        content: "";
+        position: absolute;
+        width: 7px;
+        height: 7px;
+        right: -6px;
+        top: -5px;
+        border-radius: 50%;
+        background: #1648d8;
+      }
+      .boot-brand strong {
+        display: block;
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+      .boot-brand span {
+        display: block;
+        margin-top: 3px;
+        color: #66645d;
+        font-family: "Space Grotesk", monospace;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .boot-card h1 {
+        margin: 0;
+        font-family: "Newsreader", Georgia, serif;
+        font-size: 30px;
+        font-weight: 400;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+      }
+      .boot-status {
+        margin: 12px 0 18px;
+        color: #1648d8;
+        font-family: "Space Grotesk", monospace;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .boot-bar {
+        position: relative;
+        overflow: hidden;
+        height: 6px;
+        background: #ddd8cc;
+      }
+      .boot-bar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 40%;
+        background: #1648d8;
+        animation: boot-slide 1.4s ease-in-out infinite;
+      }
+      @keyframes boot-slide {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(250%); }
+      }
+      .boot-note {
+        margin: 18px 0 0;
+        color: #555555;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-bar::after { animation: none; width: 100%; opacity: 0.5; }
+        #boot { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot">
+      <div class="boot-card">
+        <div class="boot-brand">
+          <div class="boot-mark" aria-hidden="true"></div>
+          <div><strong>Time-Series Forecasting</strong><span>Universal scenario engine</span></div>
+        </div>
+        <h1>Starting the forecasting engine</h1>
+        <p class="boot-status" id="boot-status" role="status" aria-live="polite">Loading</p>
+        <div class="boot-bar" aria-hidden="true"></div>
+        <p class="boot-note" id="boot-note">
+          Everything runs in your browser, so your workbooks never leave your device. The first
+          visit downloads the Python runtime (about 50&nbsp;MB); later visits load from the
+          browser cache.
+        </p>
+        <noscript><p class="boot-note">Please enable JavaScript to use this application.</p></noscript>
+      </div>
+    </div>
+    <div id="root"></div>
+
+    <script type="module">
+      // Pinned runtime. Updating it changes the Streamlit and Pyodide versions
+      // (and the Pyodide-provided package versions listed in web/requirements.txt).
+      const STLITE_VERSION = "1.9.1";
+      const STLITE_BASE = `https://cdn.jsdelivr.net/npm/@stlite/browser@${STLITE_VERSION}/build`;
+
+      const boot = document.getElementById("boot");
+      const bootStatus = document.getElementById("boot-status");
+      const bootNote = document.getElementById("boot-note");
+
+      function hideBootScreen() {
+        boot.classList.add("is-done");
+        setTimeout(() => boot.remove(), 300);
+      }
+
+      function showBootError(message) {
+        bootStatus.textContent = "Start-up failed";
+        bootNote.textContent = message;
+        boot.querySelector(".boot-bar").remove();
+      }
+
+      // Mirror stlite's progress messages, and reveal the app once it has
+      // rendered real content (or an error, so that failures stay visible).
+      const observer = new MutationObserver(() => {
+        const skeleton = document.querySelector('[data-testid="stAppSkeleton"]');
+        const content = document.querySelector('.stApp [data-testid="stElementContainer"]');
+        if ((content && !skeleton) || document.querySelector(".Toastify__toast--error")) {
+          observer.disconnect();
+          hideBootScreen();
+          return;
+        }
+        const toasts = document.querySelectorAll(".Toastify__toast");
+        const latest = toasts[toasts.length - 1]?.textContent.trim().replace(/\.$/, "");
+        if (latest && bootStatus.textContent !== latest) bootStatus.textContent = latest;
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+      // Never trap the page behind the start-up screen.
+      setTimeout(() => {
+        observer.disconnect();
+        hideBootScreen();
+      }, 300000);
+
+      try {
+        if (typeof WebAssembly !== "object") {
+          throw new Error("This browser does not support WebAssembly.");
+        }
+
+        const stylesheet = document.createElement("link");
+        stylesheet.rel = "stylesheet";
+        stylesheet.href = `${STLITE_BASE}/stlite.css`;
+        document.head.appendChild(stylesheet);
+
+        const [{ mount }, manifest] = await Promise.all([
+          import(`${STLITE_BASE}/stlite.js`),
+          fetch("app/manifest.json", { cache: "no-cache" }).then((response) => {
+            if (!response.ok) throw new Error(`app/manifest.json: HTTP ${response.status}`);
+            return response.json();
+          }),
+        ]);
+
+        const files = Object.fromEntries(
+          Object.entries(manifest.files).map(([path, url]) => [path, { url }]),
+        );
+
+        mount(
+          {
+            entrypoint: manifest.entrypoint,
+            requirements: manifest.requirements,
+            files,
+            streamlitConfig: {
+              // Same toolbar as a public Streamlit deployment, also on localhost previews.
+              "client.toolbarMode": "viewer",
+              // Published files never change, so skip Streamlit's source-file
+              // polling (several checks per second in the browser).
+              "server.fileWatcherType": "none",
+            },
+          },
+          document.getElementById("root"),
+        );
+      } catch (error) {
+        console.error(error);
+        observer.disconnect();
+        showBootError(
+          `${error.message} Please reload the page. If the problem persists, check that your ` +
+            "browser can reach cdn.jsdelivr.net and pypi.org, which host the in-browser Python runtime.",
+        );
+      }
+    </script>
+  </body>
+</html>

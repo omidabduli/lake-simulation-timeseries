@@ -6,8 +6,12 @@
 [![SHAP Explainability](https://img.shields.io/badge/SHAP-Explainable_AI-orange.svg?style=flat)](https://shap.readthedocs.io/)
 [![Release](https://img.shields.io/github/v/release/omidabduli/lake-simulation-timeseries?style=flat&label=release)](https://github.com/omidabduli/lake-simulation-timeseries/releases/latest)
 [![Developer](https://img.shields.io/badge/Developed%20by-Omid%20Abduli-1648D8.svg?style=flat)](https://github.com/omidabduli)
+[![Deploy to GitHub Pages](https://github.com/omidabduli/lake-simulation-timeseries/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/omidabduli/lake-simulation-timeseries/actions/workflows/deploy-pages.yml)
 
 > **Universal Time-Series Forecasting** is an explainable forecasting and multi-domain scenario-analysis engine built for data scientists, financial analysts, engineers, researchers, and operations leaders. It combines structured Excel workflows, forward-only model validation, XGBoost forecasting, and TreeSHAP explanations in a clear, reproducible interface across any time-series domain.
+
+**Use it online:** <https://omidabduli.github.io/lake-simulation-timeseries/>. The complete
+Python engine runs inside your browser (WebAssembly), so uploaded workbooks never leave your device.
 
 See the [v2.0.0 release notes](https://github.com/omidabduli/lake-simulation-timeseries/releases/tag/v2.0.0)
 or review the complete [changelog](CHANGELOG.md).
@@ -22,7 +26,7 @@ or review the complete [changelog](CHANGELOG.md).
 *   **🔮 SHAP Explainability (XAI)**: Demystifies the machine learning "black box" by calculating exact game-theory-based SHAP values, identifying which parameters drove the simulation outcomes.
 *   **📚 Interactive Documentation Center**: Built-in 9-tab reference manual explaining Excel data specifications, XGBoost parameters, TimeSeriesSplit CV, cyclical feature math, TreeSHAP equations, and troubleshooting.
 *   **🎨 Professional Scientific Interface**: A responsive, high-contrast workspace inspired by the Roland Digital visual system, with accessible labels and clear training feedback.
-*   **📁 Structured Run Logging**: Automatically serializes accuracy metrics ($R^2$, RMSE), model parameters, and top SHAP drivers into JSON files for future AI analysis.
+*   **📁 Structured Run Logging**: Automatically serializes accuracy metrics ($R^2$, RMSE), model parameters, and top SHAP drivers into JSON files for future AI analysis (written to `logs/` when run locally; in the browser build they stay in the tab's temporary file system).
 
 ---
 
@@ -83,8 +87,19 @@ Compare validation R² and RMSE rather than judging a model by training fit alon
 ```text
 ├── app.py                     # 🌐 Main Streamlit Application & UI Layer
 ├── run.command                # ⚡ One-click macOS/Linux Shell Launcher
-├── requirements.txt           # 📦 Python Package Dependencies
+├── requirements.txt           # 📦 Python Package Dependencies (local / server)
 ├── .gitignore                 # 🚫 Git Exclude Patterns (filters large sheets)
+├── .github/workflows/
+│   └── deploy-pages.yml       # 🚀 Test, build and deploy to GitHub Pages on every push to main
+├── web/                       # 🌍 GitHub Pages build (runs the app in the browser via stlite)
+│   ├── index.html             # Host page: loads stlite + Pyodide and mounts the app
+│   ├── entrypoint.py          # Browser entrypoint that runs app.py
+│   ├── requirements.txt       # Python packages installed in the browser runtime
+│   └── 404.html, favicon.png
+├── scripts/build_site.py      # 🧱 Assembles the static site into _site/
+├── legacy/server/             # 🗄️ Previous server deployment (Docker, Hetzner), kept for rollback
+├── Example/                   # 📊 Demo workbook (2,000 historical rows + warming scenario)
+├── tests/                     # ✅ Unit tests (python -m unittest discover -s tests)
 ├── modules/                   # 🧠 Core Backend Architecture
 │   ├── __init__.py            # 📦 Module Package Setup
 │   ├── data_loader.py         # 🗄️ Excel Ingestion & IQR Outlier Checks
@@ -104,7 +119,7 @@ Compare validation R² and RMSE rather than judging a model by training fit alon
 
 ---
 
-## 💻 Installation & Quick Start
+## 💻 Local Development
 
 ### 1. Clone the repository
 ```bash
@@ -112,60 +127,104 @@ git clone https://github.com/omidabduli/lake-simulation-timeseries.git
 cd lake-simulation-timeseries
 ```
 
-### 🐳 Option A: Run with Docker (Recommended & Easiest)
-You can run Lake Time-Series Forecasting in a container without installing Python, compilers, or packages locally.
+### 2. Run the Streamlit app locally (fastest edit–reload loop)
+Requires **Python 3.9+**. On macOS, XGBoost also needs `libomp` (`brew install libomp`).
 
-#### Using Docker Compose
-1. **Build and launch the container**:
-   ```bash
-   docker compose up --build -d
-   ```
-2. **Access the application**:
-   Open your browser at [http://localhost:8501](http://localhost:8501) ⚡
-   *(Any logs created during runs will automatically sync to your local `./logs/` directory)*
-3. **Check container health or stop the application**:
-   ```bash
-   docker compose ps
-   docker compose down
-   ```
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run app.py --server.port 8502
+```
 
-#### Using Standard Docker Commands
-1. **Build the image**:
-   ```bash
-   docker build -t lake-time-series-forecasting .
-   ```
-2. **Run the container**:
-   ```bash
-   docker run -d -p 8501:8501 -v "$(pwd)/logs:/app/logs" --name lake-forecasting lake-time-series-forecasting
-   ```
-3. **Access the application**:
-   Open your browser at [http://localhost:8501](http://localhost:8501) ⚡
+Open <http://localhost:8502>. On macOS you can also double-click `run.command` in Finder.
 
-The image includes the production Streamlit theme and a built-in health check at
-`/_stcore/health`, making it suitable for Docker Compose and container hosting
-platforms that support standard Docker images.
+### 3. Preview the GitHub Pages build (exactly what is deployed)
+No installs needed; the script uses only the Python standard library:
+
+```bash
+python3 scripts/build_site.py --serve
+```
+
+Open <http://127.0.0.1:8000/>. The first start downloads the in-browser Python runtime
+(about 50 MB) from jsDelivr and PyPI; later starts load from the browser cache.
+
+### 4. Run the tests
+```bash
+python -m unittest discover -s tests -v
+```
 
 ---
 
-### 🐍 Option B: Local Development Setup
+## 📦 Production Build
 
-#### Prerequisites
-Make sure you have **Python 3.9+** installed. If you are using macOS, it is recommended to install `libomp` (required by XGBoost for multi-threading):
 ```bash
-brew install libomp
+python3 scripts/build_site.py
 ```
 
-#### Setup Steps
-1. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+This writes the static site to `_site/`: `index.html` (loads [stlite](https://github.com/whitphx/stlite),
+i.e. Streamlit on Pyodide/WebAssembly, pinned in `web/index.html`), `404.html`, `favicon.png`, and `app/`
+with the Python sources, the demo workbook and `app/manifest.json`. New files in `modules/` are included
+automatically; any other file the app opens at runtime must be added to `app_files()` in
+`scripts/build_site.py`. Python packages for the browser runtime are listed in `web/requirements.txt`.
 
-2. **Run the Streamlit Dashboard**:
-   ```bash
-   streamlit run app.py --server.port 8502
-   ```
-   *On macOS, you can also double-click `run.command` directly from the Finder to launch.*
+---
+
+## 🚀 Deployment (GitHub Pages)
+
+Pushing to `main` deploys automatically. The workflow `.github/workflows/deploy-pages.yml`:
+
+1. installs `requirements.txt` on Python 3.13 (the in-browser Python version),
+2. runs the unit tests (a failing test stops the deployment),
+3. builds `_site/` with `scripts/build_site.py`,
+4. publishes it with the official `actions/upload-pages-artifact` and `actions/deploy-pages` actions.
+
+It can also be started by hand from the **Actions** tab (**Run workflow**).
+
+**One-time setup:** in the repository open **Settings → Pages** and set **Source** to **GitHub Actions**.
+
+### GitHub Pages URL
+Project sites are published at `https://USERNAME.github.io/REPOSITORY/`. For this repository:
+
+**<https://omidabduli.github.io/lake-simulation-timeseries/>**
+
+All asset and file paths are relative, so the site works under this sub-path and at the root of a custom domain.
+
+### Custom domain
+The intended production address is `time-series.roland-digital.de`. With the GitHub Actions deployment,
+the domain is configured in **Settings → Pages → Custom domain** (a `CNAME` file is ignored for this
+deployment type, so the repository does not contain one). Once the site works on the `github.io` URL:
+
+1. *(Recommended)* verify `roland-digital.de` under **GitHub → Settings → Pages → Add a domain** (adds a `TXT` record).
+2. In the DNS zone of `roland-digital.de`, replace the `A` record of `time-series` with
+   a `CNAME` record `time-series` → `omidabduli.github.io` (without the repository name).
+3. Enter `time-series.roland-digital.de` as the custom domain and, once the certificate is issued, enable **Enforce HTTPS**.
+
+Details and rollback: [MIGRATION_TO_GITHUB_PAGES.md](MIGRATION_TO_GITHUB_PAGES.md).
+
+---
+
+## 🏗️ Architecture
+
+**Fully static, client-side application.** GitHub Pages serves only static files. In the visitor's
+browser, stlite starts Pyodide (CPython compiled to WebAssembly) in a Web Worker, installs the
+scientific stack (pandas, NumPy, scikit-learn, XGBoost, openpyxl, Plotly) and runs the same
+Streamlit app (`app.py` and `modules/`) that also runs on a server. Parsing, training, validation, SHAP and charts all happen
+on the device; nothing is uploaded anywhere.
+
+```text
+Browser ──► GitHub Pages (index.html + app/*.py) ──► stlite / Pyodide (Web Worker)
+        ──► pandas · scikit-learn · XGBoost · Plotly ──► charts, SHAP, CSV download
+```
+
+The same code still runs as a regular Streamlit server (`streamlit run app.py`, or the container in
+`legacy/server/`).
+
+### Remaining server dependencies
+None for the application itself. At runtime the browser downloads public, versioned assets from
+two CDNs: jsDelivr (stlite, Pyodide and its packages) and PyPI (openpyxl, Plotly), and fonts
+from Google Fonts. The only feature without a server-side equivalent is central collection of
+the JSON run logs: in the browser they stay in the visitor's tab.
 
 ---
 

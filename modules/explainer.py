@@ -1,12 +1,21 @@
 """
 explainer.py — SHAP-based model explanation using TreeExplainer.
+
+The `shap` package is used when it is installed (local / server runs). The
+in-browser build (Pyodide) cannot install it because it depends on numba, so
+there the same TreeSHAP values come from XGBoost's built-in implementation —
+the exact call shap.TreeExplainer itself makes for XGBoost models.
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import shap
 import xgboost as xgb
+
+try:
+    import shap
+except ImportError:
+    shap = None
 
 
 def compute_shap_values(
@@ -38,14 +47,36 @@ def compute_shap_values(
         mean_abs_shap : np.ndarray shape (n_features,) — average absolute |SHAP| impact per feature.
         feature_names : list[str] — corresponding feature names.
     """
-    # Initialize the TreeExplainer with the trained XGBoost model
-    explainer = shap.TreeExplainer(model)
-    
-    # Calculate SHAP values for the scenario data (yields matrix of shape [n_samples, n_features])
-    shap_values = explainer.shap_values(X_scenario)          # shape (n_samples, n_features)
+    if shap is not None:
+        # Initialize the TreeExplainer with the trained XGBoost model
+        explainer = shap.TreeExplainer(model)
+
+        # Calculate SHAP values for the scenario data (yields matrix of shape [n_samples, n_features])
+        shap_values = explainer.shap_values(X_scenario)      # shape (n_samples, n_features)
+    else:
+        shap_values = xgboost_tree_shap_values(model, X_scenario)
 
     # Compute the average absolute impact of each feature across all scenario timesteps
     mean_abs_shap = np.abs(shap_values).mean(axis=0)         # shape (n_features,)
     feature_names = list(X_scenario.columns)
 
     return mean_abs_shap, feature_names
+
+
+def xgboost_tree_shap_values(
+    model: xgb.XGBRegressor,
+    X_scenario: pd.DataFrame,
+) -> np.ndarray:
+    """Exact TreeSHAP values computed by XGBoost itself.
+
+    Mirrors shap.TreeExplainer(model).shap_values(X) for XGBoost models
+    (tree_path_dependent, no background data): all trees, raw margin output.
+    XGBoost appends the bias term as the last column, which is dropped.
+    """
+    contributions = model.get_booster().predict(
+        xgb.DMatrix(X_scenario),
+        iteration_range=(0, 0),
+        pred_contribs=True,
+        validate_features=False,
+    )
+    return contributions[:, :-1]
