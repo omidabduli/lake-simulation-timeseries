@@ -1,13 +1,13 @@
 """
-modules/docs_view.py — Technical Documentation & Reference Manual
-EcoPredict AI · Lake Time-Series Forecasting & Scenario Simulation Engine
+modules/docs_view.py — Technical documentation page
+Universal Time-Series Forecasting
 """
 from __future__ import annotations
 
 import streamlit as st
 
 def render_documentation(example_file_bytes: bytes | None = None) -> None:
-    """Render the clean, professional documentation section inside Streamlit."""
+    """Render the documentation section inside Streamlit."""
     
     # ── Header Lockup (Matching main app landing aesthetic) ────────────────────
     st.markdown(
@@ -91,9 +91,9 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
 
         <div class="doc-hero-shell">
             <div class="doc-hero-kicker">UNIVERSAL TIME-SERIES FORECASTING · TECHNICAL REFERENCE</div>
-            <h1>System Documentation & Reference Manual</h1>
+            <h1>Documentation</h1>
             <p class="doc-hero-desc">
-                Complete technical specifications, mathematical foundations, data workbook standards, and architecture reference for the universal forecasting and scenario simulation engine.
+                Workbook format, model and validation method, feature engineering, SHAP explanations, metrics, code layout and deployment.
             </p>
             <div class="doc-meta-pills">
                 <span class="doc-meta-pill">v2.0.0</span>
@@ -107,7 +107,7 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
         unsafe_allow_html=True,
     )
 
-    # ── Interactive Sub-Tabs Navigation (No Emojis) ───────────────────────────
+    # ── Sub-tab navigation ────────────────────────────────────────────────────
     tab_names = [
         "01. Overview",
         "02. Workbook Schema",
@@ -133,15 +133,15 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     ) = st.tabs(tab_names)
 
     # =========================================================================
-    # TAB 1: EXECUTIVE OVERVIEW & QUICK START
+    # TAB 1: OVERVIEW & QUICK START
     # =========================================================================
     with tab_overview:
         st.markdown(
             r"""
-            ### Executive System Overview
-            **Universal Time-Series Forecasting** is an explainable machine learning platform designed for data scientists, financial analysts, operations leaders, engineers, and researchers. It solves the key bottleneck in multi-variable scenario analysis: **converting complex multi-variable historical observations into explainable future predictions across any domain**.
+            ### Overview
+            Universal Time-Series Forecasting predicts one variable of a multi-variable time series for future scenarios. You provide historical observations and one or more scenario sheets in which the target column is empty. The app trains an XGBoost model on the history, fills in the target for each scenario and uses SHAP to show which inputs drove the forecast. The lake dataset is only a demo; any regularly sampled time series in the same layout works.
 
-            #### Key Capabilities & Architecture Pillars
+            #### Main parts
             """,
             unsafe_allow_html=True,
         )
@@ -151,9 +151,9 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             st.markdown(
                 """
                 <div class="eco-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: var(--on-surface); font-size: 15px;">Automated Pipeline</h4>
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--on-surface); font-size: 15px;">Data preparation</h4>
                     <p style="margin: 0; font-size: 13px; color: var(--on-surface-variant); line-height: 1.5;">
-                        Ingests raw multi-sheet Excel workbooks, normalizes heterogeneous timestamp formats, automatically identifies the prediction target ($y$), and handles missing sentinel values.
+                        Reads multi-sheet Excel workbooks, finds the time column, detects the prediction target ($y$) and flags placeholder values such as -999 and statistical outliers.
                     </p>
                 </div>
                 """,
@@ -163,9 +163,9 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             st.markdown(
                 """
                 <div class="eco-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: var(--on-surface); font-size: 15px;">No-Leakage Cross Validation</h4>
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--on-surface); font-size: 15px;">Time-ordered validation</h4>
                     <p style="margin: 0; font-size: 13px; color: var(--on-surface-variant); line-height: 1.5;">
-                        Uses forward-only expanding window cross-validation (<code>TimeSeriesSplit</code>) to strictly prevent future temporal observations from leaking into past training iterations.
+                        Uses expanding-window cross-validation (<code>TimeSeriesSplit</code>), so the model is always validated on data that comes after its training data.
                     </p>
                 </div>
                 """,
@@ -175,9 +175,9 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             st.markdown(
                 """
                 <div class="eco-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: var(--on-surface); font-size: 15px;">Game-Theoretic XAI</h4>
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--on-surface); font-size: 15px;">SHAP explanations</h4>
                     <p style="margin: 0; font-size: 13px; color: var(--on-surface-variant); line-height: 1.5;">
-                        Computes exact TreeSHAP values for every prediction step, surfacing the exact physical drivers (e.g. water temperature, solar radiation, runoff) behind forecasts.
+                        Computes TreeSHAP values for the scenario predictions and ranks the inputs by their average contribution (in the lake demo, for example air temperature or solar radiation).
                     </p>
                 </div>
                 """,
@@ -185,7 +185,7 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             )
 
         st.markdown("---")
-        st.markdown("### Step-by-Step Workflow")
+        st.markdown("### Workflow")
         
         st.markdown(
             """
@@ -193,27 +193,27 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
                 <div style="background: var(--surface-container); border: 1px solid var(--border); padding: 1.1rem; border-radius: var(--rounded-md);">
                     <div style="font-family: 'Space Grotesk', monospace; color: var(--primary); font-weight: 700; font-size: 12px;">STEP 01</div>
                     <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Upload Workbook</h4>
-                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Upload an <code>.xlsx</code> file containing 1 Historical sheet and 1+ Scenario sheets.</p>
+                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Upload an Excel file with one historical sheet followed by one or more scenario sheets.</p>
                 </div>
                 <div style="background: var(--surface-container); border: 1px solid var(--border); padding: 1.1rem; border-radius: var(--rounded-md);">
                     <div style="font-family: 'Space Grotesk', monospace; color: var(--primary); font-weight: 700; font-size: 12px;">STEP 02</div>
                     <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Audit Data Quality</h4>
-                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Review sentinel values (e.g. <code>-999</code>) and IQR outlier flags before training.</p>
+                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Review placeholder values (e.g. <code>-999</code>) and IQR outlier flags before training.</p>
                 </div>
                 <div style="background: var(--surface-container); border: 1px solid var(--border); padding: 1.1rem; border-radius: var(--rounded-md);">
                     <div style="font-family: 'Space Grotesk', monospace; color: var(--primary); font-weight: 700; font-size: 12px;">STEP 03</div>
-                    <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Train & Optimize</h4>
-                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Watch live forward-only cross-validation optimize XGBoost hyperparameters.</p>
+                    <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Train</h4>
+                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">A random search tests XGBoost settings with time-ordered cross-validation and keeps the best one.</p>
                 </div>
                 <div style="background: var(--surface-container); border: 1px solid var(--border); padding: 1.1rem; border-radius: var(--rounded-md);">
                     <div style="font-family: 'Space Grotesk', monospace; color: var(--primary); font-weight: 700; font-size: 12px;">STEP 04</div>
-                    <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Analyze SHAP Drivers</h4>
-                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Explore interactive Plotly forecasts alongside SHAP directional feature importances.</p>
+                    <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Review results</h4>
+                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Inspect the forecast chart, the validation scores and the SHAP feature ranking.</p>
                 </div>
                 <div style="background: var(--surface-container); border: 1px solid var(--border); padding: 1.1rem; border-radius: var(--rounded-md);">
                     <div style="font-family: 'Space Grotesk', monospace; color: var(--primary); font-weight: 700; font-size: 12px;">STEP 05</div>
-                    <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Export & Telemetry</h4>
-                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Download German locale CSV results and review structured JSON telemetry logs.</p>
+                    <h4 style="margin: 0.3rem 0; font-size: 14px; color: var(--on-surface);">Export</h4>
+                    <p style="margin: 0; font-size: 12px; color: var(--on-surface-variant);">Download the results as CSV. Each run is also written to a JSON log file.</p>
                 </div>
             </div>
             """,
@@ -221,14 +221,14 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
         )
 
         if example_file_bytes:
-            st.markdown("#### Demonstration Dataset")
+            st.markdown("#### Demo dataset")
             st.markdown(
-                "Download the demonstration dataset below to inspect a fully-formatted workbook with 2,000 daily observations and a 365-day warming scenario."
+                "The demo workbook contains 2,000 daily lake observations and a 365-day warming scenario. Use it as a template for your own data."
             )
             st.download_button(
-                label="Download Demo Dataset (.xlsx)",
+                label="Download demo workbook (.xlsx)",
                 data=example_file_bytes,
-                file_name="Lake_Time_Series_Forecasting_Demo_2000_Rows.xlsx",
+                file_name="Lake_Demo_2000_Rows.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 key="doc_download_demo",
             )
@@ -239,41 +239,40 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_workbook:
         st.markdown(
             r"""
-            ### Workbook Architecture & Schema Specifications
-            To ensure zero-configuration processing, Excel files must follow a clean tabular layout. The forecasting engine automatically parses sheets according to strict limnological data rules.
+            ### Workbook format
+            The app reads an Excel workbook (`.xlsx` or `.xls`) with one table per sheet: a time column plus one column per variable.
 
-            #### 1. Sheet Hierarchy Rules
-            * **Sheet 1 (Historical Baseline)**: Must contain historical observations recorded at regular time intervals (e.g. daily, hourly). All columns must be complete (or contain handled sentinels).
-            * **Sheets 2+ (Future Scenarios)**: Must have the **exact same column names and order** as Sheet 1. Each scenario sheet represents a projected future state (e.g., *Warming Scenario*, *High Rainfall Scenario*).
-            
-            **Target Column Auto-Detection**: In every scenario sheet, exactly **one variable column must be left completely blank (empty NaN)**. The engine automatically detects this blank column as the target variable ($y$) to predict.
+            #### 1. Sheet order
+            * **Sheet 1 (historical)**: past observations at a regular interval (for example daily or hourly), including the target variable.
+            * **Sheets 2 and later (scenarios)**: the same column names as sheet 1. Each sheet describes one possible future, for example a warming scenario or a wet year.
 
-            ---
-            #### 2. Temporal Index Standards
-            The engine automatically scans columns for a valid date/time header. Supported header names include:
-            `Time`, `Date`, `Datetime`, `Timestamp`, `Datum`, `Zeit`, `Tage`, `Jahr_Tag`.
-
-            Supported timestamp formats parsed automatically:
-            * `YYYY-MM-DD` (e.g., `2024-06-15`)
-            * `YYYY-MM-DD HH:MM:SS` (e.g., `2024-06-15 14:30:00`)
-            * `DD.MM.YYYY` (German format, e.g., `15.06.2024`)
-            * Standard Excel serial date integers/floats.
+            **Target column**: in every scenario sheet, exactly one column must be left completely empty. The app uses this column as the target ($y$). If no column or more than one column is empty, the scenario is rejected with an error message.
 
             ---
-            #### 3. Data Cleaning & Sentinel Values
-            Scientific logging instruments frequently encode sensor failures using sentinel values. The platform allows configuring missing value sentinels:
+            #### 2. Time column
+            The time column is found by its header, ignoring case: `Time`, `Date`, `Datetime`, `Timestamp`, `Datum` or `Zeit`. If none of these is present, the first column is used when it contains dates, otherwise any column with a date type. The rows are then sorted by time.
+
+            Date formats:
+            * Cells formatted as dates in Excel are read directly. This is the most reliable option.
+            * Text dates are parsed with `pandas.to_datetime`, for example `2024-06-15` or `2024-06-15 14:30:00`.
+            * Day-first text such as `01.02.2024` can be read as month-first, and mixed formats in one column are not parsed. Use ISO format (`YYYY-MM-DD`) or real Excel dates.
+
+            ---
+            #### 3. Placeholder values
+            Many loggers write a fixed number such as -999 when a measurement is missing. These values are listed in the data quality panel. For each column you can choose to replace them with empty values:
             """,
             unsafe_allow_html=True,
         )
 
         st.markdown(
             """
-            | Sentinel Code | Interpretation | Treatment in Pipeline |
+            | Value | Source | Treatment |
             | :--- | :--- | :--- |
-            | `-999.0` | Default Sensor Error Code | Converted to `NaN` & linearly/forward interpolated |
-            | `-9999.0` | Out-of-Bounds Outlier | Converted to `NaN` & linearly/forward interpolated |
-            | `999.0` / `9999.0` | Telemetry Overflow Flag | Converted to `NaN` & linearly/forward interpolated |
-            | Custom values | User-defined (e.g. `-1`) | Added via Missing-Value Rules UI panel |
+            | `-999`, `-9999` | Default list | Replaced with `NaN` if selected, then forward-filled |
+            | `999`, `9999` | Default list | Replaced with `NaN` if selected, then forward-filled |
+            | Custom values | Entered by the user (e.g. `-1`) | Added in the advanced settings, then treated the same way |
+
+            Empty values are filled forward during feature engineering. Gaps at the very start of a series are filled backward.
             """,
             unsafe_allow_html=True,
         )
@@ -281,9 +280,9 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
         st.markdown(
             """
             <div style="padding: 0.85rem 1.1rem; background: var(--surface-container); border-left: 3px solid var(--primary); border-radius: var(--rounded-md); margin-top: 1rem;">
-                <strong style="color: var(--on-surface); font-size: 13px;">Note on Negative Values</strong>
+                <strong style="color: var(--on-surface); font-size: 13px;">Negative values</strong>
                 <p style="margin: 0.2rem 0 0 0; font-size: 13px; color: var(--on-surface-variant);">
-                    Physical measurements like air temperature or net heat flux can naturally be negative (e.g., -5.2 °C). Therefore, -1 is NOT treated as a missing sentinel by default. Only enable -1 if your instrument explicitly uses it as an error flag.
+                    Many measurements can be negative, for example air temperature (-5.2 °C). For that reason -1 is not treated as missing by default. Add it only if your data uses -1 as a placeholder.
                 </p>
             </div>
             """,
@@ -296,20 +295,23 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_ml:
         st.markdown(
             r"""
-            ### Machine Learning Core & Validation Rigor
+            ### Model and validation
 
-            #### XGBoost Regressor Engine
-            The core predictive model is powered by **XGBoost (Extreme Gradient Boosting)**, an ensemble decision tree framework renowned for state-of-the-art performance on tabular time-series data. 
+            #### XGBoost regressor
+            The forecasting model is an XGBoost regressor (Extreme Gradient Boosting), an ensemble of decision trees that works well on tabular data.
 
-            Gradient boosting minimizes the loss function iteratively by fitting new trees to the residual errors of prior iterations:
+            Gradient boosting reduces the loss step by step. Each new tree is fitted to the remaining errors of the trees before it:
             $$F_m(x) = F_{m-1}(x) + \gamma_m h_m(x)$$
-            where $h_m(x)$ is the base tree learner added at step $m$, and $\gamma_m$ is the tree shrinkage weight (learning rate).
+            where $h_m(x)$ is the tree added at step $m$ and $\gamma_m$ is its weight, scaled by the learning rate.
+
+            #### Hyperparameter search
+            The app runs a random search. Each candidate draws a learning rate between 0.01 and 0.2, a number of trees between 100 and 500, and a maximum tree depth from the range set by the model complexity option (2 to 5, 2 to 8 or 2 to 10). Search effort sets the number of candidates (8, 15 or 30). Every candidate is scored with time-series cross-validation, and the one with the highest mean validation $R^2$ is retrained on the full history.
 
             ---
-            #### Time-Series Cross Validation (`TimeSeriesSplit`)
-            Standard K-Fold cross-validation randomly shuffles data, causing **catastrophic temporal leakage** (using tomorrow's water temperature to predict yesterday's dissolved oxygen). 
+            #### Time-series cross-validation (`TimeSeriesSplit`)
+            Standard K-fold cross-validation shuffles the rows, so the model can be trained on later data and tested on earlier data. For time series this leaks information and makes the scores look better than they are.
 
-            To prevent leakage, our engine uses **Forward-Only Expanding Window Cross Validation**:
+            The app uses expanding-window cross-validation instead. Each fold trains on all data up to a cut-off and validates on the block that follows. The number of folds can be set to 3, 4 or 5 (default 4). Schematic example:
             """,
             unsafe_allow_html=True,
         )
@@ -329,13 +331,15 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
         st.markdown(
             r"""
             ---
-            #### Statistical Outlier Auditing (Interquartile Range)
-            To prevent severe instrument anomalies from corrupting tree splits, the data quality module scans all numeric predictors using the **Interquartile Range (IQR)** rule:
+            #### Outlier check (interquartile range)
+            The data quality check flags values in every numeric column using the interquartile range (IQR) rule:
             $$IQR = Q_3 - Q_1$$
             $$\text{Lower Fence} = Q_1 - k \cdot IQR, \quad \text{Upper Fence} = Q_3 + k \cdot IQR$$
 
-            * **Extreme Outliers ($k = 3.0$, Default)**: Filters severe telemetry or data corruptions while preserving legitimate extreme real-world events (e.g. market volatility, weather spikes, surge demand).
-            * **Mild Outliers ($k = 1.5$, Optional)**: Stricter filter suitable for quiet, low-noise time-series signals.
+            * **$k = 3.0$ (default)**: flags only far-out values, so real but unusual events are mostly kept.
+            * **$k = 1.5$**: stricter, useful for quiet, low-noise series.
+
+            $k$ can be set between 1.5 and 5.0. Flagged values are only listed. They are replaced with empty values only for the columns you select.
             """,
             unsafe_allow_html=True,
         )
@@ -346,30 +350,32 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_fe:
         st.markdown(
             r"""
-            ### Feature Engineering & Temporal Seasonality
+            ### Feature engineering
 
-            #### Cyclical Trigonometric Encodings
-            Integer representations of time (e.g., Month 1 to 12, Hour 0 to 23) create artificial discontinuities—Month 12 (December) and Month 1 (January) appear numerically far apart despite being adjacent seasons.
+            #### Cyclical time features
+            Time stored as integers (month 1 to 12, hour 0 to 23) has a jump at the end of each cycle: December (12) and January (1) look far apart, although they are neighbours.
 
-            Our engine maps calendar time onto a 2D continuous unit circle using Sine and Cosine transformations:
+            The app therefore places calendar time on a unit circle with sine and cosine. These features can be switched off with the seasonality option.
 
-            ##### Monthly Seasonality ($T = 12$ months)
+            ##### Month ($T = 12$)
             $$\text{month\_sin} = \sin\left(\frac{2\pi \cdot \text{month}}{12}\right), \quad \text{month\_cos} = \cos\left(\frac{2\pi \cdot \text{month}}{12}\right)$$
 
-            ##### Hourly Seasonality ($T = 24$ hours)
+            ##### Hour of day ($T = 24$)
             $$\text{hour\_sin} = \sin\left(\frac{2\pi \cdot \text{hour}}{24}\right), \quad \text{hour\_cos} = \cos\left(\frac{2\pi \cdot \text{hour}}{24}\right)$$
 
-            ##### Annual Day-of-Year Seasonality ($T = 365.25$ days)
-            $$\text{day\_sin} = \sin\left(\frac{2\pi \cdot \text{day}}{365.25}\right), \quad \text{day\_cos} = \cos\left(\frac{2\pi \cdot \text{day}}{365.25}\right)$$
+            ##### Day of year ($T = 365$)
+            $$\text{doy\_sin} = \sin\left(\frac{2\pi \cdot \text{doy}}{365}\right), \quad \text{doy\_cos} = \cos\left(\frac{2\pi \cdot \text{doy}}{365}\right)$$
+
+            #### Trend features
+            Two features let the model follow long-term trends: `year` and `time_idx_days`, the number of days since the first historical record. Scenario sheets use the same starting point, so the day count continues instead of restarting at zero.
 
             ---
-            #### Continuous Lag & Rolling Window Aggregates
-            Many physical, financial, and operational systems exhibit temporal inertia (e.g. system outputs take time to respond to external drivers). The feature pipeline computes:
-            1. **Lag Features**: $x_{t-1}, x_{t-2}, x_{t-3}$ capturing immediate short-term momentum.
-            2. **Rolling Window Means**: $\mu_{w}(t) = \frac{1}{w}\sum_{i=0}^{w-1} x_{t-i}$ over 3-step, 7-step, and 14-step windows.
-            3. **Rolling Standard Deviations**: $\sigma_{w}(t)$ measuring short-term variance.
+            #### Rolling means
+            Many systems respond to their inputs with a delay. To give the model this context, the app adds a rolling mean of every numeric input column (the target is excluded):
+            $$\mu_{w}(t) = \frac{1}{w}\sum_{i=0}^{w-1} x_{t-i}$$
+            The windows can be chosen from 3, 7, 14 and 30 observations (default 3 and 7). At the start of a series the mean uses the observations available so far.
 
-            **Scenario Timeline Continuity**: When forecasting future scenarios, rolling windows seamlessly anchor to the tail of the historical dataset, ensuring zero boundary artifact at the start of prediction.
+            Rolling means are computed within each sheet. The first rows of a scenario therefore do not use values from the end of the historical sheet.
             """,
             unsafe_allow_html=True,
         )
@@ -380,30 +386,28 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_shap:
         st.markdown(
             r"""
-            ### Explainable AI (XAI) & TreeSHAP Valuation
+            ### SHAP explanations
 
-            #### Why Explainability Matters in Forecasting
-            Machine learning models are frequently criticized as "black boxes." In scenario modeling, stakeholders must understand *why* a model projects a specific outcome.
+            #### Why explanations matter
+            A forecast is easier to trust and to check when you can see which inputs drove it.
 
-            Our engine integrates **TreeSHAP (SHapley Additive exPlanations)**, a game-theoretic framework that computes the exact marginal contribution of each variable to every single prediction.
+            The app uses TreeSHAP (SHapley Additive exPlanations). It is based on Shapley values from cooperative game theory and computes the contribution of each input to each prediction exactly for tree models.
 
             ---
-            #### Game Theory Mathematical Foundation
+            #### Shapley values
             For a feature set $F$ and a specific feature $i$, the Shapley value $\phi_i(x)$ is calculated across all feature subsets $S \subseteq F \setminus \{i\}$:
             $$\phi_i(x) = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!(|F| - |S| - 1)!}{|F|!} \Big( f_x(S \cup \{i\}) - f_x(S) \Big)$$
 
-            ##### Key Theoretical Guarantees:
-            1. **Efficiency / Local Accuracy**: The sum of all feature SHAP values equals the difference between the model forecast $f(x)$ and the baseline expected value $E[f(x)]$:
+            ##### Properties
+            1. **Local accuracy**: The sum of all feature SHAP values equals the difference between the model forecast $f(x)$ and the baseline expected value $E[f(x)]$:
                $$f(x) = E[f(x)] + \sum_{i=1}^M \phi_i(x)$$
-            2. **Consistency**: If a feature's marginal contribution increases or stays constant, its assigned SHAP value will never decrease.
-            3. **Symmetry**: Features contributing equally to all coalitions receive equal SHAP values.
+            2. **Consistency**: if a feature's marginal contribution increases or stays the same, its SHAP value does not decrease.
+            3. **Symmetry**: features that contribute equally to all subsets receive equal SHAP values.
 
             ---
-            #### How to Interpret SHAP Outputs in the App
-            * **Mean Absolute SHAP Bar Chart**: Ranks predictors by overall impact ($\frac{1}{N}\sum |\phi_i|$). Longer bars indicate primary drivers of system dynamics.
-            * **Directional SHAP Impact**:
-              * **Positive SHAP Value (+)**: Pushes the predicted target variable higher.
-              * **Negative SHAP Value (-)**: Drives the predicted target variable lower.
+            #### Reading the SHAP chart
+            * **Bar chart**: the app computes SHAP values for all scenario predictions and ranks the inputs by their mean absolute value ($\frac{1}{N}\sum |\phi_i|$). Longer bars mean a larger average influence on the forecast.
+            * **Sign**: for a single prediction, a positive SHAP value pushes the forecast up and a negative value pushes it down. The bar chart uses absolute values, so it shows size, not direction.
             """,
             unsafe_allow_html=True,
         )
@@ -414,31 +418,22 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_metrics:
         st.markdown(
             r"""
-            ### Forecasting Performance & Scientific Evaluation Metrics
+            ### Evaluation metrics
 
-            During cross-validation and final model evaluation, four standardized performance metrics are computed to evaluate model fidelity.
+            The app reports two metrics. Both are averaged over the cross-validation folds of the selected model, so they describe performance on data the model was not trained on.
 
-            #### 1. Coefficient of Determination ($R^2$)
-            Measures the proportion of variance in the target variable explained by the model:
+            #### 1. Coefficient of determination ($R^2$)
+            The share of the variance in the target that the model explains:
             $$R^2 = 1 - \frac{\sum_{i=1}^n (y_i - \hat{y}_i)^2}{\sum_{i=1}^n (y_i - \bar{y})^2}$$
-            * **Score = 1.0**: Perfect prediction.
-            * **Score = 0.0**: Model performs no better than predicting the mean $\bar{y}$.
-            * **Score < 0.0**: Model performs worse than the simple historical average.
+            * **1.0**: perfect prediction.
+            * **0.0**: no better than always predicting the mean $\bar{y}$.
+            * **Below 0.0**: worse than predicting the mean.
 
             ---
-            #### 2. Root Mean Squared Error (RMSE)
-            Penalizes large errors heavily, giving an accurate measure of prediction error magnitude in original target units:
+            #### 2. Root mean squared error (RMSE)
+            The typical size of the prediction error, in the units of the target. Large errors count more than small ones because they are squared:
             $$RMSE = \sqrt{\frac{1}{n}\sum_{i=1}^n (y_i - \hat{y}_i)^2}$$
-
-            ---
-            #### 3. Mean Absolute Error (MAE)
-            Provides the average linear magnitude of errors without over-emphasizing extreme outliers:
-            $$MAE = \frac{1}{n}\sum_{i=1}^n |y_i - \hat{y}_i|$$
-
-            ---
-            #### 4. Mean Absolute Percentage Error (MAPE)
-            Expresses prediction error as a percentage relative to actual physical values:
-            $$MAPE = \frac{100\%}{n}\sum_{i=1}^n \left|\frac{y_i - \hat{y}_i}{y_i}\right|$$
+            Lower is better.
             """,
             unsafe_allow_html=True,
         )
@@ -449,33 +444,34 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_python:
         st.markdown(
             r"""
-            ### Python Codebase Architecture & API Reference
+            ### Code structure
 
-            The application follows a clean modular architecture separating data ingestion, feature generation, ML fitting, explainability, visualization, and telemetry logging.
+            `app.py` holds the Streamlit interface and runs the forecasting steps. The individual steps live in separate modules.
 
             ```text
             lake-simulation-timeseries/
-            ├── app.py                      # Streamlit UI & Orchestration Layer
-            ├── web/                        # GitHub Pages host page & browser entrypoint (stlite)
-            ├── scripts/build_site.py       # Assembles the static site for GitHub Pages
+            ├── app.py                      # Streamlit interface, search and cross-validation
+            ├── web/                        # GitHub Pages host page and browser entry point (stlite)
+            ├── scripts/build_site.py       # Builds the static site for GitHub Pages
+            ├── docker/                     # Dockerfile and docker-compose.yml
             ├── modules/
-            │   ├── data_loader.py          # Excel Parsing, Sheet Separation, IQR Audit
-            │   ├── feature_engineering.py   # Sine/Cosine Seasonality & Rolling Lags
-            │   ├── model.py                # XGBoost Trainer & TimeSeriesSplit CV
-            │   ├── explainer.py            # TreeSHAP Explainer Calculation
-            │   ├── visualizer.py           # Plotly Interactive Charting Engine
-            │   ├── logger.py               # Serialized JSON Telemetry Logger
-            │   └── docs_view.py            # Comprehensive Interactive Documentation
+            │   ├── data_loader.py          # Excel reading, sheet checks, data quality
+            │   ├── feature_engineering.py  # Seasonal, trend and rolling features
+            │   ├── model.py                # XGBoost training and prediction
+            │   ├── explainer.py            # TreeSHAP values
+            │   ├── visualizer.py           # Plotly charts
+            │   ├── logger.py               # JSON run logs
+            │   └── docs_view.py            # This documentation page
             ```
 
             ---
-            #### Module Breakdown & Responsibilities
-            * `modules/data_loader.py`: Handles file ingestion (`load_excel`), parses sheets (`separate_sheets`), converts missing value placeholders (`clean_specific_columns`), detects target columns (`detect_target_column`), and flags outliers using IQR (`detect_data_issues`).
-            * `modules/feature_engineering.py`: Normalizes time indices, extracts cyclical sine/cosine features for month/hour/day-of-year, and calculates continuous rolling lags.
-            * `modules/model.py`: Wraps XGBoost regressor fitting with automated hyperparameter grid search over `TimeSeriesSplit` cross-validation splits.
-            * `modules/explainer.py`: Interfaces with `shap.TreeExplainer` to compute exact Shapley value matrices for historical and scenario predictions (in the browser build, XGBoost's built-in TreeSHAP produces the identical values).
-            * `modules/visualizer.py`: Generates dark-themed Plotly time-series plots comparing actuals, historical fits, and scenario projections alongside SHAP bar charts.
-            * `modules/logger.py`: Writes structured run logs to `logs/simulation_YYYYMMDD_HHMMSS.json` for auditable model tracking.
+            #### Modules
+            * `modules/data_loader.py`: reads the workbook (`load_excel`), splits it into history and scenarios (`separate_sheets`), sets the time index (`normalize_time_index`), detects the target column (`detect_target_column`), checks that columns match (`validate_column_match`), flags placeholders and IQR outliers (`detect_data_issues`) and replaces selected values with `NaN` (`clean_specific_columns`).
+            * `modules/feature_engineering.py`: adds the sine/cosine features for month, hour and day of year, the trend features and the rolling means (`engineer_features`).
+            * `modules/model.py`: default XGBoost settings and the `train` and `predict` functions. The random search over `TimeSeriesSplit` folds runs in `app.py`.
+            * `modules/explainer.py`: computes mean absolute SHAP values for the scenario predictions with `shap.TreeExplainer`. In the browser build, where `shap` cannot be installed, XGBoost's built-in TreeSHAP gives the same values.
+            * `modules/visualizer.py`: Plotly charts for the historical data and scenario forecast, and the SHAP bar chart.
+            * `modules/logger.py`: writes one JSON file per run to `logs/<scenario>_YYYYMMDD_HHMMSS.json` with the target, the metrics and the top SHAP features.
             """,
             unsafe_allow_html=True,
         )
@@ -486,12 +482,12 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     with tab_docker:
         st.markdown(
             r"""
-            ### Deployment Guide
+            ### Deployment
 
-            #### Option A: GitHub Pages (Production)
-            The public application is a static site: the same Python engine runs directly in the visitor's browser through [stlite](https://github.com/whitphx/stlite) (Streamlit on Pyodide/WebAssembly). No server is involved, and uploaded workbooks never leave the device.
+            #### Option A: GitHub Pages
+            The public version is a static site. The Python code runs in the visitor's browser through [stlite](https://github.com/whitphx/stlite) (Streamlit on Pyodide/WebAssembly). There is no server, and uploaded workbooks stay on the visitor's device.
 
-            Every push to the `main` branch runs `.github/workflows/deploy-pages.yml`, which tests the code, builds the site with `scripts/build_site.py`, and publishes it to GitHub Pages. To preview the production build locally:
+            Every push to `main` runs `.github/workflows/deploy-pages.yml`, which runs the tests, builds the site with `scripts/build_site.py` and publishes it to GitHub Pages. To preview the build locally:
 
             ```bash
             python3 scripts/build_site.py --serve
@@ -499,29 +495,29 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
             ```
 
             ---
-            #### Option B: Docker Compose (Self-Hosting)
-            Runs the application as a Streamlit server in a container. The files live in `legacy/server/`:
+            #### Option B: Docker
+            Runs the app as a Streamlit server in a container. The Docker files are in `docker/`. Run the commands from the repository root:
 
             ```bash
             # 1. Clone the repository
             git clone https://github.com/omidabduli/lake-simulation-timeseries.git
             cd lake-simulation-timeseries
 
-            # 2. Build and launch container in background
-            docker compose -f legacy/server/docker-compose.yml up --build -d
+            # 2. Build and start the container in the background
+            docker compose -f docker/docker-compose.yml up --build -d
 
-            # 3. Access in browser at http://localhost:8501
+            # 3. Open http://localhost:8501
             ```
 
-            Or with standard Docker commands:
+            Without Compose:
             ```bash
-            docker build -f legacy/server/Dockerfile -t lake-forecasting .
-            docker run -d -p 8501:8501 -v "$(pwd)/logs:/app/logs" --name lake-app lake-forecasting
+            docker build -f docker/Dockerfile -t time-series-forecasting .
+            docker run -d -p 8501:8501 -v "$(pwd)/logs:/app/logs" --name time-series-forecasting time-series-forecasting
             ```
 
             ---
-            #### Option C: macOS / Linux Shell Launcher
-            You can also double-click `run.command` or execute it from terminal:
+            #### Option C: Local launcher (macOS / Linux)
+            Double-click `run.command` or start it from a terminal. The app opens at http://localhost:8502.
             ```bash
             chmod +x run.command
             ./run.command
@@ -534,40 +530,40 @@ def render_documentation(example_file_bytes: bytes | None = None) -> None:
     # TAB 9: FAQ & TROUBLESHOOTING
     # =========================================================================
     with tab_faq:
-        st.markdown("### Frequently Asked Questions & Troubleshooting")
+        st.markdown("### Troubleshooting")
 
-        with st.expander("Why did I get a 'File Structure Error' upon uploading?", expanded=True):
+        with st.expander("Why do I get a 'File Structure Error' after uploading?", expanded=True):
             st.markdown(
                 """
-                **Cause**: Your uploaded Excel workbook has fewer than 2 sheets or missing column headers.  
-                **Fix**: Ensure **Sheet 1** is named Historical (or contains past measurements) and **Sheet 2+** contain future scenarios with identical column headers.
+                **Cause**: the workbook has fewer than two sheets or is missing column headers.  
+                **Fix**: put the historical data in the first sheet and the scenarios in the following sheets, with the same column headers in every sheet. The sheet names do not matter.
                 """
             )
 
-        with st.expander("How does the system know which variable to predict?", expanded=False):
+        with st.expander("How does the app know which variable to predict?", expanded=False):
             st.markdown(
                 """
-                **Answer**: In your scenario sheets (Sheet 2+), leave the column you wish to forecast **completely blank (empty NaN values)** across all rows. The engine scans the sheet, detects the single empty column, and automatically sets it as the simulation target.
+                In each scenario sheet, leave the column you want to forecast empty in every row. The app looks for the one empty column and uses it as the target. If no column or more than one column is empty, the scenario is rejected.
                 """
             )
 
-        with st.expander("How are missing sentinel values like -999 handled?", expanded=False):
+        with st.expander("How are placeholder values like -999 handled?", expanded=False):
             st.markdown(
                 """
-                **Answer**: Missing sentinel codes defined in the Data Quality panel are converted to standard `NaN` values and interpolated using continuous forward/linear fill prior to feature engineering.
+                Placeholder values listed in the data quality panel are replaced with `NaN` for the columns you select (selected by default). During feature engineering, empty values are filled with the last valid value, and gaps at the start of a series with the next valid value.
                 """
             )
 
         with st.expander("Why is TimeSeriesSplit used instead of standard K-Fold CV?", expanded=False):
             st.markdown(
                 """
-                **Answer**: Standard K-Fold randomly shuffles data rows, causing lookahead bias (training on future dates to predict past dates). `TimeSeriesSplit` strictly enforces forward-only temporal training windows.
+                K-fold shuffles the rows, so the model can be trained on later dates and tested on earlier ones. This lookahead makes the scores too optimistic. `TimeSeriesSplit` always trains on the past and validates on the period that follows.
                 """
             )
 
-        with st.expander("Can I export prediction results for spreadsheet software like Excel?", expanded=False):
+        with st.expander("Can I open the results in Excel?", expanded=False):
             st.markdown(
                 """
-                **Answer**: Yes! The app features a one-click CSV export formatted specifically for European/German locales (using `;` delimiters and `,` decimal separators) for seamless opening in Microsoft Excel.
+                Yes. The CSV export uses `;` as the delimiter and `,` as the decimal separator, which matches German and most European Excel settings.
                 """
             )

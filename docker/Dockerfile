@@ -1,8 +1,5 @@
-# LEGACY self-hosting image (Streamlit server). The primary deployment is GitHub Pages.
-# Build context is the repository root:
-#   docker build -f legacy/server/Dockerfile -t lake-time-series-forecasting .
-#
-# Use an official Python runtime as a parent image
+# Runs the app as a normal Streamlit server. Build from the repository root:
+#   docker build -f docker/Dockerfile -t time-series-forecasting .
 FROM python:3.11-slim
 
 # Set environment variables to prevent Python from writing pyc files and buffering stdout
@@ -31,6 +28,7 @@ RUN pip install --upgrade pip && \
 # Copy the application, modules, and Streamlit theme configuration
 COPY modules/ ./modules/
 COPY app.py .
+COPY Example/ ./Example/
 COPY .streamlit/ ./.streamlit/
 
 # Create logs folder for structured runtime logging

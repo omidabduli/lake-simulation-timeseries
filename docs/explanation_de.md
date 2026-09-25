@@ -1,8 +1,8 @@
-# Lake Time-Series Forecasting: Sehr einfache Erklärung
+# Universal Time-Series Forecasting: Sehr einfache Erklärung
 
-**Autor:** OA
+**Autor:** Omid Abduli
 
-Hallo! Dieser Text erklärt, was *Lake Time-Series Forecasting* macht. Wenn die mathematischen Formeln in der ausführlichen Dokumentation zu kompliziert sind, findest du hier eine leicht verständliche Einführung.
+Hallo! Dieser Text erklärt, was *Universal Time-Series Forecasting* macht. Wenn die mathematischen Formeln in der ausführlichen Dokumentation zu kompliziert sind, findest du hier eine leicht verständliche Einführung.
 
 ---
 
@@ -52,7 +52,7 @@ Genau das macht XGBoost! Es baut nicht einen riesigen schlauen Computer, sondern
 
 ## 5. Live-Optimierung (Das beste Team zusammenstellen)
 
-Wenn das Programm sagt "🚀 Optimizing AI Model", dann probiert es aus, wie das Team am besten arbeitet. 
+Wenn das Programm "Training forecast engine" anzeigt, dann probiert es aus, wie das Team am besten arbeitet. 
 - Brauchen wir 100 Kinder oder 500 Kinder? (N-Estimators)
 - Sollen die Kinder kleine Korrekturen machen oder große Schritte wagen? (Learning Rate)
 Das Programm probiert live ganz viele Kombinationen aus und behält am Ende das Team, das am besten geraten hat!
@@ -84,4 +84,4 @@ In unserem Programm sagt SHAP nicht, wer die besten Fußballspieler waren, sonde
 
 Das Programm nimmt schmutzige Daten, räumt sie auf (Cleaning), schaut sich die Vergangenheit an (Feature Engineering), lässt ein Team von hunderten kleinen Helfern aus ihren Fehlern lernen (XGBoost), benotet das Ergebnis (RMSE/R²) und verrät uns am Ende ganz genau, warum es sich so entschieden hat (SHAP). 
 
-Alles vollautomatisch!
+Alles läuft automatisch.

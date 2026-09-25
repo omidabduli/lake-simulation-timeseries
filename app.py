@@ -1,9 +1,9 @@
 """
-app.py — Lake Environment Scenario Predictor
-EcoPredict AI · Simulation Engine
+app.py — Universal Time-Series Forecasting.
 
-All scenarios run automatically on file upload.
-Design system: Stitch "Environmental Simulation System" light theme.
+Streamlit interface: upload a workbook, check the data, train the model and
+show scenario forecasts with SHAP explanations. Every scenario runs
+automatically after upload.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.model_selection import TimeSeriesSplit
 
 # Load demonstration dataset bytes for single-click user download
-_EXAMPLE_PATH = os.path.join(os.path.dirname(__file__), "Example", "Lake_Time_Series_Forecasting_Demo_2000_Rows.xlsx")
+_EXAMPLE_PATH = os.path.join(os.path.dirname(__file__), "Example", "Lake_Demo_2000_Rows.xlsx")
 try:
     with open(_EXAMPLE_PATH, "rb") as _f:
         EXAMPLE_FILE_BYTES = _f.read()
@@ -1564,7 +1564,7 @@ with st.sidebar:
         """
         <div class="sidebar-signoff" style="line-height:1.6;">
             <div>v2.0.0 · XGBoost · SHAP · Time-series CV</div>
-            <div>By <a href="https://github.com/omidabduli" target="_blank" style="color:var(--blue);text-decoration:underline;">Omid Abduli</a> · <a href="https://roland-digital.de" target="_blank" style="color:var(--ink);text-decoration:underline;">Roland Digital</a> · <a href="https://github.com/omidabduli/lake-simulation-timeseries" target="_blank" style="color:var(--ink);text-decoration:underline;">GitHub ↗</a></div>
+            <div>By <a href="https://github.com/omidabduli" target="_blank" style="color:var(--blue);text-decoration:underline;">Omid Abduli</a> · <a href="https://github.com/omidabduli/lake-simulation-timeseries" target="_blank" style="color:var(--ink);text-decoration:underline;">GitHub ↗</a></div>
         </div>
         """,
         unsafe_allow_html=True,

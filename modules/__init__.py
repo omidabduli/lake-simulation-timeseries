@@ -1,1 +1,1 @@
-# Lake Time-Series Forecasting modules package
+# Universal Time-Series Forecasting modules package
