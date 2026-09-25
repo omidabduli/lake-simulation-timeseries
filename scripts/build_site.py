@@ -29,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WEB = ROOT / "web"
 STATIC_FILES = ("index.html", "404.html", "favicon.png")
-DEMO_WORKBOOK = "Example/Lake_Time_Series_Forecasting_Demo_2000_Rows.xlsx"
+DEMO_WORKBOOK = "Example/Lake_Demo_2000_Rows.xlsx"
 
 
 def app_files() -> dict[str, Path]:

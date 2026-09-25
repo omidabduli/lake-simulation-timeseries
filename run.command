@@ -1,6 +1,6 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────────────
-# run.command — One-click launcher for Lake Time-Series Forecasting
+# run.command — One-click launcher for Universal Time-Series Forecasting
 # Double-click this file in Finder to start the app.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -10,8 +10,8 @@ cd "$(dirname "$0")"
 # Make sure libomp (required by XGBoost on macOS) is on the dynamic linker path
 export DYLD_LIBRARY_PATH="/opt/homebrew/opt/libomp/lib:${DYLD_LIBRARY_PATH}"
 
-echo "⚡ Starting Lake Time-Series Forecasting..."
-echo "   → App will open at http://localhost:8502"
+echo "Starting Universal Time-Series Forecasting..."
+echo "   App will open at http://localhost:8502"
 echo ""
 
 python3 -m streamlit run app.py --server.port 8502

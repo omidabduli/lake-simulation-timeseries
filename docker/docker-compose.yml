@@ -1,0 +1,15 @@
+# Run from the repository root:
+#   docker compose -f docker/docker-compose.yml up --build -d
+name: time-series-forecasting
+services:
+  time-series-forecasting:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: time-series-forecasting
+    init: true
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../logs:/app/logs
+    restart: unless-stopped
