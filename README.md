@@ -111,7 +111,6 @@ Compare validation R² and RMSE rather than judging a model by training fit alon
 │   └── logger.py              # 📝 Serialized JSON Run Logging
 └── docs/                      # 📖 Deep Academic Documentation
     ├── Design.md              # 📐 UI/UX Design System Layout
-    ├── Specification.md       # 📋 Detailed Project Specifications
     ├── documentation_de.md    # 🇩🇪 Comprehensive German Academic Docs
     ├── explanation_de.md      # 🇩🇪 Quick German User Explanation
     └── explanation_fa.md      # 🇮🇷 Quick Persian User Explanation
@@ -200,7 +199,6 @@ deployment type, so the repository does not contain one). Once the site works on
    a `CNAME` record `time-series` → `omidabduli.github.io` (without the repository name).
 3. Enter `time-series.roland-digital.de` as the custom domain and, once the certificate is issued, enable **Enforce HTTPS**.
 
-Details and rollback: [MIGRATION_TO_GITHUB_PAGES.md](MIGRATION_TO_GITHUB_PAGES.md).
 
 ---
 

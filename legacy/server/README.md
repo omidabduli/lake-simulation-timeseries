@@ -1,8 +1,7 @@
 # Legacy server deployment
 
 The application is now served as a static site from **GitHub Pages** (see the
-main [README](../../README.md) and
-[MIGRATION_TO_GITHUB_PAGES.md](../../MIGRATION_TO_GITHUB_PAGES.md)). The files
+main [README](../../README.md)). The files
 in this folder belong to the previous server-based setup. They are kept, still
 working, so the application can be self-hosted or rolled back to the Hetzner
 server if ever needed.

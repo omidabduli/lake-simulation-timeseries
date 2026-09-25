@@ -1,7 +1,7 @@
 """
 visualizer.py — Plotly chart builders for the Scenario Simulator.
 
-Design System: Claude Academy Design System
+Design system:
 Colors: warm paper (#F9F8F3), card (#FFFFFF), primary accent (#1648d8).
 Font: Inter for UI, Space Grotesk / JetBrains Mono for data labels.
 """
@@ -12,7 +12,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 # ---------------------------------------------------------------------------
-# Design tokens (Claude Academy Design System)
+# Design tokens
 # ---------------------------------------------------------------------------
 _SURFACE = "#F9F8F3"
 _CARD_BG = "#FFFFFF"

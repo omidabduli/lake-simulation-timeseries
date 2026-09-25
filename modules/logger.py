@@ -2,8 +2,8 @@
 logger.py — Simulation result logging system.
 
 This module provides functionality to save important simulation results,
-methods, and metrics to a JSON log file. These logs can be read by AI agents
-to understand past runs and improve the program or model configuration over time.
+methods, and metrics to a JSON log file, so past runs can be compared and the
+model configuration tuned over time.
 """
 import os
 import json
@@ -28,7 +28,7 @@ def save_simulation_log(scen_name: str, result: dict) -> None:
     safe_name = scen_name.replace(" ", "_").replace(":", "")
     filename = f"{log_dir}/{safe_name}_{timestamp}.json"
     
-    # Prepare the payload for the AI agent
+    # Prepare the log entry
     # We extract only serializable and highly informative details.
     log_data = {
         "scenario_name": scen_name,

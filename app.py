@@ -79,7 +79,7 @@ app_mode = "Advanced"
 seasonal_mode = st.session_state.seasonal_mode
 
 # ---------------------------------------------------------------------------
-# Design System — Claude Academy Design System Specification
+# Design system
 # Colors: Warm Neutral (#F9F8F3, #F2EFE7, #FFFFFF), Accent (#1648d8)
 # Fonts: Newsreader (Serif), Inter (Sans-Serif), Space Grotesk & JetBrains Mono (Mono)
 # ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ st.markdown(
     }
 
     /* ── Dark Pill Badges (§4A Specification) ──────────────── */
-    .claude-badge, .target-badge, .doc-meta-pill {
+    .ui-badge, .target-badge, .doc-meta-pill {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
@@ -273,7 +273,7 @@ st.markdown(
     }
 
     /* ── Course / Feature Card Container (§4A Specification) ─ */
-    .claude-card, .eco-card {
+    .ui-card, .eco-card {
         background: var(--bg-card) !important;
         border: 1px solid var(--border-light) !important;
         border-radius: 16px !important;
@@ -284,27 +284,27 @@ st.markdown(
         position: relative;
         overflow: hidden;
     }
-    .claude-card:hover, .eco-card:hover {
+    .ui-card:hover, .eco-card:hover {
         transform: translateY(-2px) !important;
         box-shadow: var(--shadow-hover) !important;
     }
-    .claude-card:focus-visible, .eco-card:focus-visible {
+    .ui-card:focus-visible, .eco-card:focus-visible {
         outline: 2px solid var(--border-focus) !important;
         outline-offset: 2px !important;
     }
 
     /* ── Static Checklist Progress Display (§4B Specification) */
-    .claude-list-item {
+    .ui-list-item {
         display: flex;
         align-items: center;
         gap: 12px;
         padding: var(--space-4) 0;
         border-bottom: 1px solid var(--border-subtle);
     }
-    .claude-list-item:last-child {
+    .ui-list-item:last-child {
         border-bottom: none;
     }
-    .claude-check-icon {
+    .ui-check-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -314,16 +314,16 @@ st.markdown(
         font-size: 11px;
         flex-shrink: 0;
     }
-    .claude-check-icon.complete {
+    .ui-check-icon.complete {
         background: var(--status-complete);
         color: #FFFFFF;
     }
-    .claude-check-icon.pending {
+    .ui-check-icon.pending {
         border: 2px solid var(--status-pending);
         background: transparent;
         color: transparent;
     }
-    .claude-list-title {
+    .ui-list-title {
         font-family: 'Newsreader', Georgia, serif;
         font-size: 16px;
         font-weight: 500;
@@ -2246,27 +2246,27 @@ if uploaded is None:
     st.markdown(
         """
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 24px;">
-            <div class="claude-card">
+            <div class="ui-card">
                 <div style="margin-bottom: 12px;">
-                    <span class="claude-badge">Time-Aware Validation</span>
+                    <span class="ui-badge">Time-Aware Validation</span>
                 </div>
                 <h3 style="font-family: 'Newsreader', Georgia, serif; font-size: 22px; font-weight: 600; margin: 0 0 8px 0; color: var(--text-primary);">TimeSeriesSplit CV</h3>
                 <p style="font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
                     Uses forward-only expanding window cross-validation to strictly prevent future observations from leaking into past training iterations.
                 </p>
             </div>
-            <div class="claude-card">
+            <div class="ui-card">
                 <div style="margin-bottom: 12px;">
-                    <span class="claude-badge">Scenario Engine</span>
+                    <span class="ui-badge">Scenario Engine</span>
                 </div>
                 <h3 style="font-family: 'Newsreader', Georgia, serif; font-size: 22px; font-weight: 600; margin: 0 0 8px 0; color: var(--text-primary);">Multi-Sheet Intelligence</h3>
                 <p style="font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
                     Processes historical observations and projects multiple future scenario sheets simultaneously from a single Excel workbook.
                 </p>
             </div>
-            <div class="claude-card">
+            <div class="ui-card">
                 <div style="margin-bottom: 12px;">
-                    <span class="claude-badge">Game-Theoretic XAI</span>
+                    <span class="ui-badge">Game-Theoretic XAI</span>
                 </div>
                 <h3 style="font-family: 'Newsreader', Georgia, serif; font-size: 22px; font-weight: 600; margin: 0 0 8px 0; color: var(--text-primary);">TreeSHAP Attribution</h3>
                 <p style="font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text-secondary); line-height: 1.5; margin: 0;">
@@ -2275,9 +2275,9 @@ if uploaded is None:
             </div>
         </div>
 
-        <div class="claude-card" style="margin-top: 24px;">
+        <div class="ui-card" style="margin-top: 24px;">
             <div style="max-width: 880px; margin-bottom: 24px;">
-                <span class="claude-badge">Why this platform exists</span>
+                <span class="ui-badge">Why this platform exists</span>
                 <h4 style="font-family: 'Newsreader', Georgia, serif; font-size: 32px; font-weight: 600; line-height: 1.1; margin: 14px 0 10px; color: var(--text-primary);">The forecasting problem we solve</h4>
                 <p style="font-family: 'Inter', sans-serif; font-size: 16px; color: var(--text-secondary); line-height: 1.65; margin: 0;">
                     Organizations collect years of measurements, but turning that history into a trustworthy answer to
